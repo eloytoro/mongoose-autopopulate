@@ -23,9 +23,24 @@ module.exports = function(schema) {
     }
   };
 
-  schema.
-    pre('find', autopopulateHandler).
-    pre('findOne', autopopulateHandler);
+  schema
+    .pre('save', function (next) {
+      this.$__.wasNew = this.isNew;
+      next();
+    })
+    .post('save', function (doc, next) {
+      if (this.$__.wasNew) {
+        autopopulateHandler.call(this)
+        this.execPopulate()
+          .then(function () {
+            next();
+          });
+      } else {
+        next();
+      }
+    })
+    .pre('find', autopopulateHandler)
+    .pre('findOne', autopopulateHandler);
 };
 
 function processOption(value, options) {
